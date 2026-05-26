@@ -1,9 +1,7 @@
 mod ui;
 
-use std::sync::Mutex;
 use std::{
     ptr::null,
-    sync::Arc,
     thread::{self, sleep},
     time::Duration,
 };
@@ -13,15 +11,6 @@ use windows_sys::Win32::System::LibraryLoader::GetModuleHandleW;
 
 use crate::ui::APP;
 
-struct DRFunc {
-    set_player_pos: Option<extern "C" fn(x: f32, y: f32, z: f32, rotation: f32)>,
-}
-
-static FUNCS: Lazy<Arc<Mutex<DRFunc>>> = Lazy::new(|| {
-    Arc::new(Mutex::new(DRFunc {
-        set_player_pos: None,
-    }))
-});
 const DLL_PROCESS_ATTACH: u32 = 1;
 const _DLL_PROCESS_DETACH: u32 = 0;
 
@@ -37,21 +26,27 @@ fn spawn_ui() {
     ui::show().expect("Failed to start UI")
 }
 
+pub static BASE_ADDRESS: Lazy<u32> = Lazy::new(|| unsafe { GetModuleHandleW(null()) as u32 });
+
+pub mod dr_funcs {
+    use crate::BASE_ADDRESS;
+
+    pub fn set_player_pos(x: f32, y: f32, z: f32, rotation: f32) {
+        let fn_address = *BASE_ADDRESS + 0x6c120;
+        let fn_ptr = fn_address as *const extern "C" fn(f32, f32, f32, f32);
+        let set_fn = unsafe { *fn_ptr };
+        set_fn(x, y, z, rotation);
+    }
+}
+
 fn init() {
     println!("Hello from Danganronpa!");
     thread::spawn(spawn_ui);
-    let base_address = unsafe { GetModuleHandleW(null()) as u32 };
-    let set_player_pos_fn_address = base_address + 0x33cc80;
-    let fn_ptr =
-        set_player_pos_fn_address as *const extern "C" fn(x: f32, y: f32, z: f32, rotation: f32);
-    let set_player_pos = unsafe { *fn_ptr };
-    let mut funcs = FUNCS.lock().unwrap();
-    funcs.set_player_pos = Some(set_player_pos);
-    thread::spawn(move || read_position(base_address));
+    thread::spawn(read_position);
 }
 
-fn read_position(base_address: u32) {
-    let pos_address = base_address + 0x33cc80;
+fn read_position() {
+    let pos_address = *BASE_ADDRESS + 0x33cc80;
     let position_ptr = pos_address as *const Vec3;
     loop {
         let position = unsafe { *position_ptr };
