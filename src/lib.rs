@@ -1,15 +1,27 @@
 mod ui;
 
+use std::sync::Mutex;
 use std::{
     ptr::null,
+    sync::Arc,
     thread::{self, sleep},
     time::Duration,
 };
 
+use once_cell::sync::Lazy;
 use windows_sys::Win32::System::LibraryLoader::GetModuleHandleW;
 
 use crate::ui::APP;
 
+struct DRFunc {
+    set_player_pos: Option<extern "C" fn(x: f32, y: f32, z: f32, rotation: f32)>,
+}
+
+static FUNCS: Lazy<Arc<Mutex<DRFunc>>> = Lazy::new(|| {
+    Arc::new(Mutex::new(DRFunc {
+        set_player_pos: None,
+    }))
+});
 const DLL_PROCESS_ATTACH: u32 = 1;
 const _DLL_PROCESS_DETACH: u32 = 0;
 
@@ -30,8 +42,11 @@ fn init() {
     thread::spawn(spawn_ui);
     let base_address = unsafe { GetModuleHandleW(null()) as u32 };
     let set_player_pos_fn_address = base_address + 0x33cc80;
-    let fn_ptr = set_player_pos_fn_address as *const fn(x: f32, y: f32, z: f32, rotation: f32);
+    let fn_ptr =
+        set_player_pos_fn_address as *const extern "C" fn(x: f32, y: f32, z: f32, rotation: f32);
     let set_player_pos = unsafe { *fn_ptr };
+    let mut funcs = FUNCS.lock().unwrap();
+    funcs.set_player_pos = Some(set_player_pos);
     thread::spawn(move || read_position(base_address));
 }
 
@@ -43,7 +58,6 @@ fn read_position(base_address: u32) {
         APP.position.lock().unwrap().x = position.x;
         APP.position.lock().unwrap().y = position.y;
         APP.position.lock().unwrap().z = position.z;
-        println!("Pos: {position:?}");
         sleep(Duration::from_secs(1));
     }
 }

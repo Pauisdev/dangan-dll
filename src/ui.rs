@@ -6,6 +6,7 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use winit::platform::windows::EventLoopBuilderExtWindows;
 
+use crate::FUNCS;
 use crate::Vec3;
 
 pub static APP: Lazy<MyApp> = Lazy::new(|| MyApp {
@@ -45,10 +46,11 @@ impl eframe::App for MyApp {
             });
 
             if ui.button("Reset position").clicked() {
-                let mut pos = self.position.lock().unwrap();
-                pos.x = 0.0;
-                pos.y = 0.0;
-                pos.z = -263.0;
+                let funcs = FUNCS.lock().unwrap();
+                if funcs.set_player_pos.is_some() {
+                    let set_player_pos = funcs.set_player_pos.unwrap();
+                    set_player_pos(0.0, 0.0, -263.0, 0.0)
+                }
             }
             ui.request_repaint_after_secs(1.0);
         });
