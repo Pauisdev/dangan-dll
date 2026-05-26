@@ -21,8 +21,8 @@ fn init(h_instance: u32) {
     //let dialogue_addr = 0x2FD2B0;
     //thread::spawn(move || do_hacky_wacky(h_instance));
     unsafe {
-        let base_address = GetModuleHandleW(null()) as *mut u32;
-        let pos_address = *base_address + 0x33cc80;
+        let base_address = GetModuleHandleW(null()) as u32;
+        let pos_address = base_address + 0x33cc80;
         let position_ptr = pos_address as *const Vec3;
         let position = *position_ptr;
         println!("Pos: {position:?}");
