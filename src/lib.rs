@@ -9,7 +9,7 @@ use std::{
 use once_cell::sync::Lazy;
 use windows_sys::Win32::System::LibraryLoader::GetModuleHandleW;
 
-use crate::ui::APP;
+use crate::{dr_funcs::render_debug_text, ui::APP};
 
 const DLL_PROCESS_ATTACH: u32 = 1;
 const _DLL_PROCESS_DETACH: u32 = 0;
@@ -37,10 +37,20 @@ pub mod dr_funcs {
         let set_fn = unsafe { *fn_ptr };
         set_fn(x, y, z, rotation);
     }
+
+    pub fn render_debug_text(x: i32, y: i32, text: String) {
+        let fn_address = *BASE_ADDRESS + 0x135b0;
+        let fn_ptr = fn_address as *const extern "C" fn();
+        let _fn = unsafe { *fn_ptr };
+        println!("wowie");
+        _fn();
+        println!("mmm");
+    }
 }
 
 fn init() {
     println!("Hello from Danganronpa!");
+    render_debug_text(1, 2, String::new());
     thread::spawn(spawn_ui);
     thread::spawn(read_position);
 }

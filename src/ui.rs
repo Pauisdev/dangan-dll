@@ -46,7 +46,10 @@ impl eframe::App for MyApp {
             });
 
             if ui.button("Reset position").clicked() {
-                dr_funcs::set_player_pos(0.0, 0.0, -263.0, 0.0);
+                dr_funcs::set_player_pos(0.0, -263.0, 1.0, 0.0);
+            }
+            if ui.button("Place text").clicked() {
+                dr_funcs::render_debug_text(300, 0, String::from("HELLO WORLD"));
             }
             ui.request_repaint_after_secs(1.0);
         });
