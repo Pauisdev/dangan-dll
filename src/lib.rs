@@ -1,6 +1,7 @@
 mod ui;
 
 use std::{
+    mem,
     ptr::null,
     thread::{self, sleep},
     time::Duration,
@@ -29,30 +30,53 @@ fn spawn_ui() {
 pub static BASE_ADDRESS: Lazy<u32> = Lazy::new(|| unsafe { GetModuleHandleW(null()) as u32 });
 
 pub mod dr_funcs {
-    use crate::BASE_ADDRESS;
+    use std::{ffi::c_void, mem, os::raw::c_int};
+
+    use crate::{Asd, BASE_ADDRESS, Vec3};
 
     pub fn set_player_pos(x: f32, y: f32, z: f32, rotation: f32) {
         let fn_address = *BASE_ADDRESS + 0x6c120;
-        let fn_ptr = fn_address as *const extern "C" fn(f32, f32, f32, f32);
-        let set_fn = unsafe { *fn_ptr };
+        let fn_ptr = fn_address as *const ();
+        let set_fn: extern "C" fn(f32, f32, f32, f32) = unsafe { mem::transmute(fn_ptr) };
         set_fn(x, y, z, rotation);
     }
 
     pub fn render_debug_text(x: i32, y: i32, text: String) {
-        let fn_address = *BASE_ADDRESS + 0x135b0;
-        let fn_ptr = fn_address as *const extern "C" fn();
+        let fn_address = *BASE_ADDRESS + 0x33cc80;
+        let fn_ptr = fn_address as *const Vec3;
         let _fn = unsafe { *fn_ptr };
-        println!("wowie");
-        _fn();
+        println!("WOW");
+        println!("The value aa is: {:?}", fn_ptr);
+        //_fn(); // crash
         println!("mmm");
     }
 }
 
 fn init() {
     println!("Hello from Danganronpa!");
-    render_debug_text(1, 2, String::new());
+    println!("The base address is: {}", *BASE_ADDRESS);
+    println!("And the offset to the first BYTE of the function is: 0x135b0");
+    println!(
+        "After adding them up the address is: {}",
+        *BASE_ADDRESS + 0x135b0
+    );
+
+    //render_debug_text(1, 2, String::new());
+    //thread::spawn(read_byte);
     thread::spawn(spawn_ui);
     thread::spawn(read_position);
+}
+
+fn read_byte() {
+    let fn_address = *BASE_ADDRESS + 0x135b0;
+    let fn_ptr = fn_address as *const ();
+    loop {
+        let _fn: extern "C" fn() = unsafe { mem::transmute(fn_ptr) };
+        //println!("value is: {}", _fn);
+        _fn();
+        println!("Called fn");
+        sleep(Duration::from_secs(1));
+    }
 }
 
 fn read_position() {
@@ -83,4 +107,12 @@ impl Vec3 {
             z: 1.0,
         }
     }
+}
+
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
+struct Asd {
+    x: u8,
+    y: u8,
+    z: u8,
 }
