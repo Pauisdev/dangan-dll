@@ -29,7 +29,7 @@ impl eframe::App for MyApp {
         egui::CentralPanel::default().show_inside(ui, |ui| {
             let pos_address = *BASE_ADDRESS + 0x33cc80;
             let position_ptr = pos_address as *mut Vec3;
-            let mut position = unsafe { *position_ptr };
+            let position = unsafe { &mut *position_ptr };
 
             ui.label("Position");
             ui.horizontal(|ui| {
