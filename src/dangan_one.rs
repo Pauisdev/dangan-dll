@@ -13,19 +13,6 @@ use minhook::MinHook;
 use std::{mem, os::raw::c_void};
 
 pub fn setup_hook() {
-    println!("Before installing hooks:");
-    unsafe {
-        let ptr = (*BASE_ADDRESS + 0x20300) as *const u8;
-
-        print!("LoadBustup bytes: ");
-
-        for i in 0..10 {
-            print!("{:02X} ", *ptr.add(i));
-        }
-
-        println!();
-    }
-
     println!("Installing hooks...");
     unsafe {
         let set_player_pos_ptr = (*BASE_ADDRESS + 0x6c120) as *mut ();
@@ -35,32 +22,15 @@ pub fn setup_hook() {
         )
         .unwrap();
         ORIGINAL_SET_PLAYER_POS_FN = Some(mem::transmute(hook));
-        let load_bustup_ptr = (*BASE_ADDRESS + 0x20300) as *mut ();
+        let load_bustup_ptr = (*BASE_ADDRESS + 0x22b30) as *mut ();
 
         let hook =
             MinHook::create_hook(mem::transmute(load_bustup_ptr), load_bustup as *mut c_void)
                 .unwrap();
         ORIGINAL_LOAD_BUSTUP = Some(mem::transmute(hook));
         MinHook::enable_all_hooks().unwrap();
-        //let f: LoadBustup = std::mem::transmute(load_bustup_ptr);
-        //f(1, 2, 3);
-
-        //println!();
     }
     println!("Hooks installed!");
-
-    println!("After installing hooks:");
-    unsafe {
-        let ptr = (*BASE_ADDRESS + 0x20300) as *const u8;
-
-        print!("LoadBustup bytes: ");
-
-        for i in 0..10 {
-            print!("{:02X} ", *ptr.add(i));
-        }
-
-        println!();
-    }
 }
 
 pub extern "C" fn set_player_pos(x: f32, z: f32, unknown: f32, rotation: f32) {
@@ -74,12 +44,12 @@ pub extern "C" fn set_player_pos(x: f32, z: f32, unknown: f32, rotation: f32) {
 
 pub extern "C" fn load_bustup(unk1: i32, unk2: i32, unk3: i32) {
     println!("Intercepted call from load_bustup: {unk1}, {unk2}, {unk3}");
-    /*
+
     unsafe {
         if let Some(original) = ORIGINAL_LOAD_BUSTUP {
             original(unk1, unk2, unk3);
         }
-    }*/
+    }
 }
 
 #[repr(C)]
