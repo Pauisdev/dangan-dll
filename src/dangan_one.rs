@@ -2,18 +2,84 @@ use once_cell::sync::Lazy;
 use std::ptr::null;
 use windows_sys::Win32::System::LibraryLoader::GetModuleHandleW;
 
+type SetPlayerPosFn = extern "C" fn(f32, f32, f32, f32);
+type LoadBustup = extern "C" fn(i32, i32, i32);
+
 pub static BASE_ADDRESS: Lazy<u32> = Lazy::new(|| unsafe { GetModuleHandleW(null()) as u32 });
+static mut ORIGINAL_SET_PLAYER_POS_FN: Option<SetPlayerPosFn> = None;
+static mut ORIGINAL_LOAD_BUSTUP: Option<LoadBustup> = None;
 
-pub mod dr_funcs {
-    use crate::BASE_ADDRESS;
-    use std::mem;
+use minhook::MinHook;
+use std::{mem, os::raw::c_void};
 
-    pub fn set_player_pos(x: f32, z: f32, unknown: f32, rotation: f32) {
-        let fn_address = *BASE_ADDRESS + 0x6c120;
-        let fn_ptr = fn_address as *const ();
-        let set_fn: extern "C" fn(f32, f32, f32, f32) = unsafe { mem::transmute(fn_ptr) };
-        set_fn(x, z, unknown, rotation);
+pub fn setup_hook() {
+    println!("Before installing hooks:");
+    unsafe {
+        let ptr = (*BASE_ADDRESS + 0x20300) as *const u8;
+
+        print!("LoadBustup bytes: ");
+
+        for i in 0..10 {
+            print!("{:02X} ", *ptr.add(i));
+        }
+
+        println!();
     }
+
+    println!("Installing hooks...");
+    unsafe {
+        let set_player_pos_ptr = (*BASE_ADDRESS + 0x6c120) as *mut ();
+        let hook = MinHook::create_hook(
+            mem::transmute(set_player_pos_ptr),
+            set_player_pos as *mut c_void,
+        )
+        .unwrap();
+        ORIGINAL_SET_PLAYER_POS_FN = Some(mem::transmute(hook));
+        let load_bustup_ptr = (*BASE_ADDRESS + 0x20300) as *mut ();
+
+        let hook =
+            MinHook::create_hook(mem::transmute(load_bustup_ptr), load_bustup as *mut c_void)
+                .unwrap();
+        ORIGINAL_LOAD_BUSTUP = Some(mem::transmute(hook));
+        MinHook::enable_all_hooks().unwrap();
+        //let f: LoadBustup = std::mem::transmute(load_bustup_ptr);
+        //f(1, 2, 3);
+
+        //println!();
+    }
+    println!("Hooks installed!");
+
+    println!("After installing hooks:");
+    unsafe {
+        let ptr = (*BASE_ADDRESS + 0x20300) as *const u8;
+
+        print!("LoadBustup bytes: ");
+
+        for i in 0..10 {
+            print!("{:02X} ", *ptr.add(i));
+        }
+
+        println!();
+    }
+}
+
+pub extern "C" fn set_player_pos(x: f32, z: f32, unknown: f32, rotation: f32) {
+    println!("Intercepted call! x={x}, z={z}");
+    unsafe {
+        if let Some(original) = ORIGINAL_SET_PLAYER_POS_FN {
+            original(x, z, unknown, rotation);
+        }
+    }
+}
+
+pub extern "C" fn load_bustup(unk1: i32, unk2: i32, unk3: i32) {
+    println!("Intercepted call from load_bustup: {unk1}, {unk2}, {unk3}");
+    /*
+    unsafe {
+        if let Some(original) = ORIGINAL_LOAD_BUSTUP {
+            original(unk1, unk2, unk3);
+        }
+    }*/
 }
 
 #[repr(C)]

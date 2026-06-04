@@ -1,8 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
-use crate::Vec3;
 use crate::dangan_one::BASE_ADDRESS;
-use crate::dangan_one::dr_funcs;
+use crate::{Vec3, dangan_one};
 use eframe::{EventLoopBuilderHook, egui};
 use winit::platform::windows::EventLoopBuilderExtWindows;
 
@@ -42,7 +41,15 @@ impl eframe::App for MyApp {
             });
 
             if ui.button("Reset position").clicked() {
-                dr_funcs::set_player_pos(0.0, -263.0, 1.0, 0.0);
+                dangan_one::set_player_pos(0.0, -263.0, 1.0, 0.0);
+            }
+            if ui.button("Bustup").clicked() {
+                let ptr = (*BASE_ADDRESS + 0x20300) as *const ();
+                unsafe {
+                    let f: extern "C" fn(i32, i32, i32) = std::mem::transmute(ptr);
+                    f(2, 5, 6);
+                }
+                //dangan_one::load_bustup(1, 2, 3);
             }
             ui.request_repaint_after_secs(1.0);
         });
@@ -50,5 +57,6 @@ impl eframe::App for MyApp {
 }
 
 pub fn spawn() {
+    println!("Spawning UI");
     show().expect("Failed to start UI")
 }

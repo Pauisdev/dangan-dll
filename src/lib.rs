@@ -3,7 +3,7 @@ mod ui;
 
 use std::thread::{self};
 
-use crate::dangan_one::{BASE_ADDRESS, Vec3};
+use crate::dangan_one::Vec3;
 
 const DLL_PROCESS_ATTACH: u32 = 1;
 const _DLL_PROCESS_DETACH: u32 = 0;
@@ -18,5 +18,7 @@ extern "system" fn DllMain(_h_instance: u32, fwd_reason: u32, _: *mut core::ffi:
 
 fn init() {
     println!("Hello from Danganronpa!");
+    dangan_one::setup_hook();
+    println!("Hello?");
     thread::spawn(ui::spawn);
 }
