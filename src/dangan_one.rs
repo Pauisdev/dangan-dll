@@ -3,11 +3,11 @@ use std::ptr::null;
 use windows_sys::Win32::System::LibraryLoader::GetModuleHandleW;
 
 type SetPlayerPosFn = extern "C" fn(f32, f32, f32, f32);
-type LoadBustup = extern "C" fn(i32, i32, i32);
+type LoadCharStandFn = extern "C" fn(i32, i32);
 
 pub static BASE_ADDRESS: Lazy<u32> = Lazy::new(|| unsafe { GetModuleHandleW(null()) as u32 });
 static mut ORIGINAL_SET_PLAYER_POS_FN: Option<SetPlayerPosFn> = None;
-static mut ORIGINAL_LOAD_BUSTUP: Option<LoadBustup> = None;
+static mut ORIGINAL_LOAD_BUSTUP: Option<LoadCharStandFn> = None;
 
 use minhook::MinHook;
 use std::{mem, os::raw::c_void};
@@ -22,11 +22,13 @@ pub fn setup_hook() {
         )
         .unwrap();
         ORIGINAL_SET_PLAYER_POS_FN = Some(mem::transmute(hook));
-        let load_bustup_ptr = (*BASE_ADDRESS + 0x22b30) as *mut ();
+        let load_char_stand_ptr = (*BASE_ADDRESS + 0x22b30) as *mut ();
 
-        let hook =
-            MinHook::create_hook(mem::transmute(load_bustup_ptr), load_bustup as *mut c_void)
-                .unwrap();
+        let hook = MinHook::create_hook(
+            mem::transmute(load_char_stand_ptr),
+            load_char_stand as *mut c_void,
+        )
+        .unwrap();
         ORIGINAL_LOAD_BUSTUP = Some(mem::transmute(hook));
         MinHook::enable_all_hooks().unwrap();
     }
@@ -42,12 +44,12 @@ pub extern "C" fn set_player_pos(x: f32, z: f32, unknown: f32, rotation: f32) {
     }
 }
 
-pub extern "C" fn load_bustup(unk1: i32, unk2: i32, unk3: i32) {
-    println!("Intercepted call from load_bustup: {unk1}, {unk2}, {unk3}");
+pub extern "C" fn load_char_stand(chara: i32, emote: i32) {
+    println!("Intercepted call from load_bustup: chara={chara}, emote={emote}");
 
     unsafe {
         if let Some(original) = ORIGINAL_LOAD_BUSTUP {
-            original(unk1, unk2, unk3);
+            original(chara, emote);
         }
     }
 }
