@@ -1,13 +1,12 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
+use crate::Vec3;
+use crate::dangan_one::dr_funcs;
 use eframe::{EventLoopBuilderHook, egui};
 use once_cell::sync::Lazy;
 use std::sync::Arc;
 use std::sync::Mutex;
 use winit::platform::windows::EventLoopBuilderExtWindows;
-
-use crate::Vec3;
-use crate::dr_funcs;
 
 pub static APP: Lazy<MyApp> = Lazy::new(|| MyApp {
     position: Arc::new(Mutex::new(Vec3::one())),
@@ -47,9 +46,6 @@ impl eframe::App for MyApp {
 
             if ui.button("Reset position").clicked() {
                 dr_funcs::set_player_pos(0.0, -263.0, 1.0, 0.0);
-            }
-            if ui.button("Place text").clicked() {
-                dr_funcs::render_debug_text(300, 0, String::from("HELLO WORLD"));
             }
             ui.request_repaint_after_secs(1.0);
         });
