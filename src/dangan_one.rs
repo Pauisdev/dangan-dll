@@ -7,7 +7,7 @@ type LoadCharStandFn = extern "C" fn(i32, i32);
 
 pub static BASE_ADDRESS: Lazy<u32> = Lazy::new(|| unsafe { GetModuleHandleW(null()) as u32 });
 static mut ORIGINAL_SET_PLAYER_POS_FN: Option<SetPlayerPosFn> = None;
-static mut ORIGINAL_LOAD_BUSTUP: Option<LoadCharStandFn> = None;
+static mut ORIGINAL_LOAD_CHARA_STAND: Option<LoadCharStandFn> = None;
 
 use minhook::MinHook;
 use std::{mem, os::raw::c_void};
@@ -29,7 +29,7 @@ pub fn setup_hook() {
             load_char_stand as *mut c_void,
         )
         .unwrap();
-        ORIGINAL_LOAD_BUSTUP = Some(mem::transmute(hook));
+        ORIGINAL_LOAD_CHARA_STAND = Some(mem::transmute(hook));
         MinHook::enable_all_hooks().unwrap();
     }
     println!("Hooks installed!");
@@ -48,8 +48,8 @@ pub extern "C" fn load_char_stand(chara: i32, emote: i32) {
     println!("Intercepted call from load_bustup: chara={chara}, emote={emote}");
 
     unsafe {
-        if let Some(original) = ORIGINAL_LOAD_BUSTUP {
-            original(chara, emote);
+        if let Some(original) = ORIGINAL_LOAD_CHARA_STAND {
+            original(2, 1);
         }
     }
 }
