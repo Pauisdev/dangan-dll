@@ -1,3 +1,9 @@
+use once_cell::sync::Lazy;
+use std::ptr::null;
+use windows_sys::Win32::System::LibraryLoader::GetModuleHandleW;
+
+pub static BASE_ADDRESS: Lazy<u32> = Lazy::new(|| unsafe { GetModuleHandleW(null()) as u32 });
+
 pub mod dr_funcs {
     use crate::BASE_ADDRESS;
     use std::mem;
@@ -16,14 +22,4 @@ pub struct Vec3 {
     pub x: f32,
     pub y: f32,
     pub z: f32,
-}
-
-impl Vec3 {
-    pub fn one() -> Vec3 {
-        Vec3 {
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-        }
-    }
 }
